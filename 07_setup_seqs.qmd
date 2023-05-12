@@ -1,0 +1,222 @@
+---
+title: "Setup Mutation Sequence 07 ALK"
+author: "Barry Grant"
+date: 2023-05-08
+format:
+  html:
+    embed-resources: true
+---
+
+Here we setup student specific mutations as the basis for questions in the first year grad student exam.
+
+Note that in the new age of chatGPT and with acknowledged wide spread sharing of answers we need to make unique questions for each student. This is one approach to address this problem. 
+
+## Student setup
+
+Begin by reading the student roster:
+
+```{r}
+students <- read.csv("../Student List FA22 First year exam BG.csv")
+head(students)
+```
+
+
+## Oncogene pool
+
+Read our list of starting oncogenes. This was made by the `oncogene_setup.qmd` script.
+
+```{r}
+genes <- read.csv("oncogene_set.csv")
+head(genes)
+```
+
+# Mutation setup
+
+We can use the following function to generate some unique mutant sites based on the students PID
+
+# Generate `size` random numbers from' bounds' for each input 
+
+```{r}
+
+#' Generate random numbers for each element of a vector  
+#'
+#' Used to generate unique sets of mutation sites for each student ID in first year exam setup
+#' 
+#' @param x Any input vector for which random numbers are required. This can be numeric or character.
+#' @param size The set size or number of random numbers returned for each element of `x`
+#' @param bounds The set of numbers pulled from used to focus on a particular doman for example
+#'
+#' @return A matrix of random numbers a row per element of `x`
+#'
+#' @examples
+#'  # Example return mutations in domain 470 to 673
+#'  mutant_sites <- random_mutations(1:3, bounds=470:673)
+#   #row.names(mutant_sites) <- students$PID
+
+
+random_mutations <- function(x, size=6, bounds=2:300) {
+  
+  # Generate `size` random numbers from' bounds' for each input 
+  ans <- matrix(NA, ncol=size, nrow=length(x))
+  for(i in 1:length(x)) {
+    ans[i,] <- sample(bounds, size = size, replace = TRUE)
+  }
+  return(ans)
+}
+
+```
+
+
+
+# Obtain oncogen sequence 
+
+```{r}
+n <- 7
+
+gene <- genes[n,]$gene
+id <- genes[n,]$id
+
+gene
+```
+
+Let's read a sequence and generate some mutants. We can take any UniProtKB Swiss-Prot identifier ID here (see oncogene_setup). We will however need to change the domain 
+
+```{r}
+#| warning: false
+
+library(bio3d)
+
+#id <- "P15056" 
+wt <- get.seq(id=id)
+```
+
+
+```{r}
+# Mutant sequence starts the same as WT
+mut <- wt
+```
+
+Now we can mutate this `mut` sequence differently for each student.
+
+Focus on Kinase domain
+```{r}
+
+mutant_sites <- random_mutations(students$PID, bounds=1139:1338)
+row.names(mutant_sites) <- students$PID
+
+# The substitutions that we will make for every student
+# Note that only the position of these substitutions changes
+aa <- c("V", "E", "R", "Y", "P", "G")
+colnames(mutant_sites) <- aa
+
+head(mutant_sites)
+```
+
+
+
+Now we setup output dir and output sequence files:
+
+
+```{r}
+# Setup output dir with file for each student
+#outdir <- "student_sequences/"
+outdir <- paste0(sprintf("%02d", n), "_",
+                 gene, "_student_sequences/")
+outdir
+
+dir.create(outdir)
+
+outfiles <- paste0(outdir, students$PID, "_mutant_seq.fa")
+
+```
+
+
+```{r}
+# Go through each student and mutate student specific sites
+  #  saving to a student specific FASTA file
+
+
+
+for(i in 1:nrow(students)) {
+
+  # Go through each student and mutate student specific sites
+  #  saving to a student specific FASTA file
+
+  # Make the mutation
+  mut$ali[mutant_sites[i,]] <- aa
+
+  #  Format a record of the substitution in "I250V" syntax
+  substitutions <- paste0(wt$ali[mutant_sites[i,]], 
+                        mutant_sites[i,], 
+                        mut$ali[mutant_sites[i,]])
+
+  # Store all we did for the student
+  students[i, 5] <- paste(substitutions, collapse="  ")
+
+  q <- seqbind(wt, mut)
+  q$id <- c("wt_healthy", "mutant_tumor")
+
+  write.fasta(q, file=outfiles[i])
+}
+```
+
+Write out the answer key and save R objects with all these goodies:
+
+
+```{r}
+# Save output keys as CSV and .RData objects
+write.csv(students, file=paste0(outdir,"answer_key.csv"), row.names = FALSE)
+write.csv(mutant_sites, file=paste0(outdir,"mutant_sites.csv")
+)
+save(students, mutant_sites, file=paste0(outdir,"mutation_key.RData"))
+```
+
+
+Lets print these tables out here for reference in the rendered report.
+
+```{r}
+knitr::kable(mutant_sites)
+```
+
+and student info
+
+```{r}
+knitr::kable(students)
+```
+
+
+> Q. What protein do these sequences correspond to?
+
+> Q. What are the tumor specific mutations in your particular sequence pair (e.g. A130V)?
+
+> Q. Do your mutations cluster to any particular domain and if so give the name and PFAM id of this domain? Alternately note wheter your protein is single domain and provide it's PFAM id (e.g. PF02196).
+
+> Q. Using the NCI-GDC list the observed top 2 missense mutations in this protein?
+
+> Q. What two TCGA projects have the most cases affected by mutations of this gene?
+
+Q. What is the most common missense mutation of this gene observed in these projects
+
+> Q. List one RCSB PDB identifier with 100% identity to the wt_healthy sequence and detail the percent coverage of your query sequence for this known structure? Alternately, provide your most similar PDB structure along with it's percent identity, coverage and E-value. 
+
+
+> Q. Using AlphaFold notebook at <URL> generate an alpha fold structural model using the default paramaters for your mutant sequence (note that this can take some time depending upon your sequence length).
+
+> Q. Download the resulting PDB model and use Mol-star (or your favoriate molecular viewer) to render a molecular figure. Please show your mutant amino acid side chains as spacefill and the protein as cartoon colored by local quality score pLDDT. Upload this image to GradeScope.
+
+> Q. 
+Considering only your mutations in high quality structure regions (with a pLDDT score > 70)
+> Q. Are any of these mutations on the surface of the protein and hence have a potential to interfere with protein-protein interaction events? XXXX
+
+---
+
+
+You could use the PFAM see alignment. Are any of the mutations in conserved regions?
+
+
+
+
+
+
+
+What protein domain do 

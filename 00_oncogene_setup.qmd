@@ -1,0 +1,61 @@
+---
+title: "Setup oncogenes"
+author: "Barry Grant"
+format:
+  html:
+    embed-resources: true
+---
+
+The first step here is to define a relatively large list of different oncogenes (ideally one per student) that can be assigned to students as the basis for their exam. Hence **each student gets a unique starting sequence as well as unique mutation set**.
+
+
+Here are 23 example oncogenes commonly mutated in cancers (one for each of our 23 students):
+
+
+```{r}
+genes <- c("KRAS", "TP53", "PIK3CA", "EGFR", "BRAF", "MYC", "ALK", "NOTCH1", "MET", "RET", "JAK2", "CDK4", "CDK6", "CCND1", "PTEN", "ERBB2", "AKT1", "FGFR2", "FGFR3", "IDH1", "IDH2", "SF3B1", "U2AF1")
+
+names <- c("Kirsten rat sarcoma viral oncogene homolog", "Cellular tumor antigen p53", "Phosphatidylinositol-4,5-bisphosphate 3-kinase catalytic subunit alpha isoform", "Epidermal growth factor receptor", "Serine/threonine-protein kinase B-raf", "Myc proto-oncogene protein", "Anaplastic lymphoma receptor tyrosine kinase", "Neurogenic locus notch homolog protein 1", "Hepatocyte growth factor receptor", "Proto-oncogene tyrosine-protein kinase receptor Ret", "Tyrosine-protein kinase JAK2", "Cyclin-dependent kinase 4", "Cyclin-dependent kinase 6", "G1/S-specific cyclin-D1", "Phosphatase and tensin homolog", "Receptor tyrosine-protein kinase erbB-2", "RAC-alpha serine/threonine-protein kinase", "Fibroblast growth factor receptor 2", "Fibroblast growth factor receptor 3", "Isocitrate dehydrogenase 1", "Isocitrate dehydrogenase 2", "Splicing factor 3B subunit 1", "Splicing factor U2AF 35 kDa subunit")
+
+ids <- c("P01116", "P04637", "P42336", "P00533", "P15056", "P01106", "Q9UM73", "P46531", "P08581", "P07949", "O60674", "P11802", "Q00534", "P24385", "P60484", "P04626", "P31749", "P21802", "P22607", "O75874", "O43837", "Q15750", "P26368")
+
+pfam <- c("PF00071;PF14604", "PF00870;PF07710;PF13920", "PF00454;PF00787", "PF01030;PF07714", "PF00069;PF07714", "PF00105", "PF07714;PF00041", "PF00066;PF07686", "PF01030;PF07714", "PF01030;PF07714", "PF00017;PF07714", "PF00069", "PF00069", "PF00134", "PF00787;PF00397", "PF01030;PF07714", "PF00069", "PF01030;PF00041", "PF01030;PF00041", "PF00682", "PF00682", "PF11833", "PF01226")
+
+oncogenes <- data.frame(gene = genes, 
+                        name = names, 
+                        id = ids,
+                        pfam = pfam)
+
+head(oncogenes)
+
+```
+
+
+Some of these we exclude because they are too long (NOTCH1), single domains (CDK4 and 6) or we just don't know much about them in cancer (row 17 on-wards).
+
+Select subset to work with:
+
+```{r}
+inds <- c(1:7,9:11,14:16)
+gene_pool <- oncogenes[ inds, ]
+
+gene_pool
+```
+
+
+Now we have 13 oncogenes to work with that we can assign to each student. 
+
+Save this out for mutation generation:
+
+```{r}
+write.csv(gene_pool, file="oncogene_set.csv", row.names = FALSE)
+save(gene_pool, file="oncogene_set.RData")
+```
+
+```{r}
+# Check format of output
+tmp <- read.csv("oncogene_set.csv")
+head(tmp)
+```
+
+All looks good. We can read this CSV file into one of our next setup scripts to perform mutagensis and generate sequence files.

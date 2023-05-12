@@ -1,0 +1,42 @@
+---
+title: "Sequence Files for 2022/2023"
+author: "Barry Grant"
+format:
+  html:
+    embed-resources: true
+date: 2023-05-08
+---
+
+This is a directory listing of unique exam sequence files - 1 per student listed and linked to via student PID.
+
+> **Instructions**: Find your PID below and click to download the linked sequence. Note that this link and sequence set is **unique for you** and if you obtain the wrong sequence you will get different answers and zero points.
+
+
+```{r}
+#| echo: false
+students <- read.csv("../Student List FA22 First year exam BG.csv")
+#head(students)
+```
+
+### Files
+
+```{r}
+#| echo: false
+
+indir <- "exam_sequences/"
+outfiles <- paste0(indir, students$PID, "_mutant_seq.fa")
+#outfiles
+```
+
+
+```{r}
+#| results: asis
+#| echo: false
+
+library(pander)
+
+link.txt <- pandoc.link.return(outfiles, text=students$PID)
+
+pandoc.list(link.txt, loose=TRUE)
+```
+
